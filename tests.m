@@ -1,4 +1,5 @@
-video = VideoReader('media/test_video.mov');
+% Display only the ROI from video
+video = VideoReader('media/subject_1.avi');
 numFrames = floor(video.Duration * video.FrameRate);
 videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
 
@@ -12,6 +13,22 @@ for i=1:numFrames
     frame = face.getRoiImg(frame, faces(1,:), det);
     videoFrames(:, :, :, i) = frame;
     imshow(frame);
+end
+%%
+% Get average color vector time series (1 per frame)
+video = VideoReader('media/subject_1.avi');
+numFrames = floor(video.Duration * video.FrameRate);
+videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
+
+det = detector('new', 'shape_predictor_68_face_landmarks.dat');
+
+meanColorVs = zeros(numFrames, 3);
+
+for i=1:numFrames
+    frame = readFrame(video);
+    faces = detector('detect', det, frame);
+    faceRect = faces(1, :);
+    meanColorVs(i, :) = signal.getSignalFromFace(frame, faceRect, det);
 end
 
 %%
@@ -81,3 +98,4 @@ for i=1:size(faces,1)
     faces_base = faces_base + facee;
     imshow(faces_base);
 end
+%%
