@@ -32,9 +32,10 @@ for i=1:numFrames
 end
 
 H = signalExtraction(meanColorVs, numFrames);
+H_filtered = signalFiltration(H);
 
 figure;
-plot(H);
+plot(H_filtered);
 %%
 test_img = imread('media/test_image.png');
 size(test_img)
