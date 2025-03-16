@@ -1,5 +1,5 @@
 % Display only the ROI from video
-video = VideoReader('media/subject_1.avi');
+video = VideoReader('subject_1.avi');
 numFrames = floor(video.Duration * video.FrameRate);
 videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
 
@@ -16,7 +16,7 @@ for i=1:numFrames
 end
 %%
 % Get average color vector time series (1 per frame)
-video = VideoReader('media/subject_1.avi');
+video = VideoReader('subject_1.avi');
 numFrames = floor(video.Duration * video.FrameRate);
 videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
 
@@ -31,6 +31,10 @@ for i=1:numFrames
     meanColorVs(i, :) = signal.getSignalFromFace(frame, faceRect, det);
 end
 
+H = signalExtraction(meanColorVs, numFrames);
+
+figure;
+plot(H);
 %%
 test_img = imread('media/test_image.png');
 size(test_img)
