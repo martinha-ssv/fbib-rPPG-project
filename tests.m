@@ -104,3 +104,19 @@ for i=1:size(faces,1)
     imshow(faces_base);
 end
 %%
+
+% Display only the ROI from video
+video = VideoReader('media/subject_1.avi');
+numFrames = floor(video.Duration * video.FrameRate);
+videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
+
+det = detector('new', 'shape_predictor_68_face_landmarks.dat');
+
+
+for i=1:numFrames
+    frame = readFrame(video);
+    faces = detector('detect', det, frame);
+    shape = detector('fit', det, frame, faces(1,:));
+    frame = face.getRoiImg(frame, faces(1,:), det);
+    videoFrames(:, :, :, i) = frame;
+end

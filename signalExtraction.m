@@ -1,7 +1,9 @@
 
-% POS method: 1) temporal normalization  2) orthogonal projection onto a
-% plane orthogonal to the skin  3) alpha.tuning to produce a 1D pulse
-% signal  4) filtering of the pulse signal
+% POS method: 
+% 1) temporal normalization  
+% 2) orthogonal projection onto a plane orthogonal to the skin  
+% 3) alpha.tuning to produce a 1D pulse signal  
+% 4) filtering of the pulse signal
 
 % lf = fs * ls  fs- sampling frequency (constant over time), ls- interval
 % that contains 1 cardiac cycle, reccomended is 1.6s
