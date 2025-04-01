@@ -16,7 +16,7 @@ for i=1:numFrames
 end
 %%
 % Get average color vector time series (1 per frame)
-video = VideoReader('subject_1.avi');
+video = VideoReader('media/subject_1.avi');
 numFrames = floor(video.Duration * video.FrameRate);
 videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
 
@@ -30,6 +30,9 @@ for i=1:numFrames
     faceRect = faces(1, :);
     meanColorVs(i, :) = signal.getSignalFromFace(frame, faceRect, det);
 end
+
+meanColorVs = load('meanColorVs.mat');
+meanColorVs = meanColorVs.meanColorVs;
 
 H = signalExtraction(meanColorVs, numFrames);
 H_filtered = signalFiltration(H);

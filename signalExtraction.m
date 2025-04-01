@@ -37,7 +37,7 @@ function H = signalExtraction(meanColorVs, numFrames)
         
         % Temporal Mean of the last lf frames 
         % c as line vector again ??
-        mu_n(n, :) = ((lf - 1)/lf) * mu_n(n - 1, :) + (1 / lf) * c';
+        mu_n(n, :) = ((lf - 1)/lf) * mu_n(n - 1, :) + (1 / lf) * c'; % --> zero padding
 
         % 1) Temporal Normalization
         % EXISTS inv() FUNCTION BUT MATLAB SUGGESTED ME TO USE DIAG \ C
@@ -50,8 +50,8 @@ function H = signalExtraction(meanColorVs, numFrames)
 
         % s1 and s2 mean 
         % NOT SURE ABOUT mu_s1 BECAUSE IT NEEDS mu_si-1??? (assuming its 0)
-        mu_s1 = ((lf - 1)/lf) * mu_s1 + (1/lf) * s(n, 1);
-        mu_s2 = ((lf - 1)/lf) * mu_s2 + (1/lf) * s(n, 2);
+        mu_s1 = ((lf - 1)/lf) * mu_s1 + (1/lf) * s(n, 1); % --> zero padding
+        mu_s2 = ((lf - 1)/lf) * mu_s2 + (1/lf) * s(n, 2); % --> zero padding
 
         % delta i calculation: delta i = (si - mu_si)
         delta1 = s(n, 1) - mu_s1;
