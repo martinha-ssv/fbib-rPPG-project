@@ -55,14 +55,23 @@ classdef Queue < handle
         end
 
 
-        function toMat = toMatrix(obj)
-            %TOMATRIX Converts the queue to a matrix
+        function toMat = toMatrix(obj, timeAxis)
+            %TOMATRIX Converts the queue to a matrix. Default is time 0 on index 1 (reversed from order of Queue elements)
+            
+            if nargin < 2
+                timeAxis = true;
+            end
+
             if isempty(obj.elements)
                 toMat = [];
             elseif length(obj.elements) == 1
                 toMat = obj.elements{1}(:); % Ensure column format for a single element
             else
                 toMat = vertcat(obj.elements{:})';
+            end
+
+            if timeAxis
+                toMat = toMat(:, end:-1:1);
             end
         end
 

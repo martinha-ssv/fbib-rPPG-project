@@ -1,40 +1,67 @@
 % Read video
-video = VideoReader('media/subject_1.avi');
-fs = video.FrameRate; % Sampling frequency
+%video = VideoReader('media/subject_1.avi'); % Use video file
+%fs = video.FrameRate; % Sampling frequency
+%N = floor(video.Duration * video.FrameRate); % Number of frames in video
+
+% Live video feed
+cam = webcam; % Use webcam
+fs = 20; % Sampling frequency (30 fps)
+N = 1000; % Number of frames to process
+
+ts = 1/fs; % Sampling period
 ls = 1.6; % Interval containing 1 cardiac cycle
 
-numFrames = floor(video.Duration * video.FrameRate); % Number of frames in video
+
+timestamps = zeros(1, N); % Timestamps for each frame
+
+
+
 
 % Initialize detector
 det = detector('new', 'shape_predictor_68_face_landmarks.dat');
 
-% Initialize raw signal buffer
-
+% Initialize window variables. "Zero padding"
 mu_n_1 = 0;
 mu_s_n_1 = 0;
 sigma_s_n_1 = 0;
 
-% Initialize BPV signal buffer
-Hs = BufferWithStorage(10);
+% Initialize signal buffers
+framesInCycle = ceil(fs * ls);
+windowSize = framesInCycle; % Window size is 3 cardiac cycles
+hopSize = framesInCycle; % Hop size is 1 cardiac cycle
 
-% Initialize filtered BPV signal buffer
-bpvSignalFilteredWindow = Buffer(10);
-
-% Initialize HR signal buffer
-hrSignal = Buffer(10);
-
-
-% videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8'); % 4D tensor to store video (maybe not needed, only if we want to save the video)
+hs = Buffer(framesInCycle,1); % Window size is 1 cardiac cycle
+Hs = Buffer(windowSize, 1, true); % Window of unfiltered BPV signal. Length is 3 times the length of a cardiac cycle, to avoid distortion.
+filteredHs = zeros(1,1);
 
 
+% Initialize filter object
+d = signal.filterObject(fs, [0.8 2.5]); % Butterworth bandpass filter with bandpass [0.8; 2.5]Hz (equivalent to human heart rate range of 48 to 150 bpm)
+%zi = zeros(size(d.sosMatrix, 1), 2); % Initial conditions for the filter
 
-for i=1:numFrames
+
+% videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8'); % 4D tensor to store video (not needed, only if we want to save the video)
+figure(1);
+y_data = plot(filteredHs);
+
+parpool('Processes',1);
+D = parallel.pool.DataQueue;
+fig = figure('Visible','on');
+afterEach(D,@postProcessing.processImg);
+
+f = parfeval(@acquisition.getFrameFromCamera,0,D,fs);
+pause(30);
+
+for i=1:N
     % Get new frame
-    frame = readFrame(video);
+    tStart = tic;
+    %frame = readFrame(video); 
+    frame = snapshot(cam);
+    timestamps(i) = toc(tStart);
 
     % Get ROI from frame
     faces = detector('detect', det, frame);
-    shape = detector('fit', det, frame, faces(1,:));
+    %shape = detector('fit', det, frame, faces(1,:));
 
     % Get signal from face
     c = signal.getSignalFromFace(frame, faces(1,:), det);
@@ -42,12 +69,38 @@ for i=1:numFrames
     % Calculate bpv signal from raw signal
     [H_n, mu_n_1, mu_s_n_1, sigma_s_n_1, h_n] = signal.processWindow(fs, ls, c, mu_n_1, mu_s_n_1, sigma_s_n_1, hs);
     Hs.enqueue(H_n);
+    hs.enqueue(h_n);
 
+    % Filter signal
+    if mod(i, hopSize) == 0 && i > Hs.getCapacity()
+        y = filter(d, Hs.toMatrix(), 2);
+        if floor(i / hopSize) == 1 % On first iteration
+            filteredHs = y;%(1:2 * hopSize);
+        else
+            filteredHs = [filteredHs, y];%(1:end - hopSize)];
+            % cross fade?
+        end
+    end
 
-    % Store frame (debugging purposes)
+    
+    set(y_data, 'YData', filteredHs(max(end-3*framesInCycle, 1):end));
+
+    drawnow limitrate;
+
+    elapsed = toc(tStart);
+    if elapsed < ts
+        pause(ts - elapsed);
+    else 
+        disp('Frame processing time exceeded sampling period');
+    end
+
+    % Store frame (debugging purposes / if we want to save the video)
     % videoFrames(:, :, :, i) = frame;
 
-    % 
 end
 
+figure(2);
+subplot(3,1,1);
 plot(Hs.getStorage()); 
+subplot(3,1,2);
+plot(filteredHs);

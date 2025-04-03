@@ -2,10 +2,12 @@ classdef Buffer < Queue
     properties (Access = protected)
         capacity
         el_dim % Dimension of the elements in the buffer
+        storage
+        hasStorage
     end
 
     methods
-        function obj = Buffer(capacity, el_dim)
+        function obj = Buffer(capacity, el_dim, storage)
             %BUFFER Construct an instance of a buffer
             if nargin < 1
                 capacity = 10;
@@ -17,14 +19,24 @@ classdef Buffer < Queue
             end
             obj.el_dim = el_dim;
 
+            if nargin < 3
+                storage = false;
+            end
+            if storage
+                obj.hasStorage = true
+                obj.storage = {};
+            end
         end
 
 
 
         function enqueue(obj, value)
             %ENQUEUE Adds an element to the end of the buffer
-            if length(obj.elements) == obj.capacity
-                obj.dequeue();
+            if obj.isFull()
+                dequeued = obj.dequeue();
+                if obj.hasStorage
+                    obj.storage{end+1} = dequeued;
+                end
             end
             obj.elements{end+1} = value;
         end
@@ -65,8 +77,20 @@ classdef Buffer < Queue
                 
                 q = Buffer.queueFromMtrx(mtrx, obj.capacity, obj.el_dim);
             end
-
         end
+
+
+        function storedElements = getStorage(obj)
+            %GETSTORAGE Returns the storage
+            if obj.hasStorage
+                storedElements = obj.storage;
+                storedElements = vertcat(storedElements{:});
+            else
+                disp('Non-existentPropertyError: Buffer has no storage.');
+                storedElements = {};
+            end
+        end
+
     end
 
     methods (Static)
