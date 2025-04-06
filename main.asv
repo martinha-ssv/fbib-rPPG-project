@@ -95,15 +95,14 @@ for i=1:N
             filteredHs = y;%(1:2 * hopSize);
             filteredHsDiff = diff(filteredHs);
         else
-            filteredHs = [filteredHs, y];%(1:end - hopSize)];
+            filteredHs = [filteredHs, y];
             diffY = diff(y);
             filteredHsDiff = [filteredHsDiff, diffY, diffY(end) ];
         end
         actualPeaks = postProcessing.getPeaks(y, window_timestamps, last_t, mu_T)
         peaks = [peaks, actualPeaks];
-
         if i > HRwindowSize
-            HR = 60 * sum(peaks(i - HRwindowSize + 1 : i)) / (HRwindowSize / fs);
+            HR = 60 * sum(peaks(i - HRwindowSize + 1 : min(i, length(peaks)))) / (HRwindowSize / fs);
             HRs(end + 1) = HR;
         end
     end
@@ -127,20 +126,31 @@ HRs_gt = gt(2, :);
 t_gt = gt(3,:);
 
 figure(2);
-hold on;
 subplot(2, 1, 1);
+hold on;
+timestamps = timestamps(1:length(filteredHs));
 plot(timestamps, filteredHs);
-plot(t, gt, filteredHs_gt);
+plot(t_gt, filteredHs_gt);
+legend('PPG Signal', 'GT PPG Signal');
+hold off;
 
 subplot(2, 1, 2);
-hr_ts = 1:length(HRs); hr_ts = hr_ts * (windowSize / fs);
-plot(hr_ts, HRs, 'm-o');
+hold on;
+hr_ts = 1:length(HRs); hr_ts = hr_ts / (windowSize / fs);
+plot(hr_ts, filter(ones(1,5)/5, 1, HRs, ones(1, 4)), 'mo');
 plot(t_gt, HRs_gt);
+legend('HR Signal', 'GT HR Signal');
 
-%plot(expectedTs, ones(length(expectedTs)), '-o');
-%plot(timestamps, putativePeaks, '-o');
-plot(timestamps, peaks, '-o');
-yline(0.1);
-legend('PPG Signal', 'GT PPG Signal', '3', '4');
+%legend('PPG Signal', 'GT PPG Signal', 'HR Signal', 'GT HR Signal');
 
 hold off;
+
+fs_gt = 1/ mean(diff(t_gt));
+p = fs_gt / fs;
+q = 1;
+
+[hr_original_upsampled, t_upsampled] = resample(x, p, q);
+
+% Adjust time vector accordingly
+Fs_upsampled = Fs_original * (p/q);
+t_upsampled = (0:length(x_upsampled)-1) / Fs_upsampled;

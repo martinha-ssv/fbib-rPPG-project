@@ -1,5 +1,5 @@
 % Read video
-video = VideoReader('media/sub2.avi'); % Use video file
+video = VideoReader('media/sub3.avi'); % Use video file
 fs = video.FrameRate; % Sampling frequency
 N = floor(video.Duration * video.FrameRate); % Number of frames in video
 
@@ -119,7 +119,7 @@ for i=1:N
 
 end
 %%
-gt_file = "data/ground_truth2.txt";
+gt_file = "data/ground_truth3.txt";
 gt = readmatrix(gt_file);
 filteredHs_gt = gt(1, :);
 HRs_gt = gt(2, :);
@@ -144,3 +144,14 @@ legend('HR Signal', 'GT HR Signal');
 %legend('PPG Signal', 'GT PPG Signal', 'HR Signal', 'GT HR Signal');
 
 hold off;
+
+fs_gt = 1/ mean(diff(t_gt));
+p = ceil(fs_gt / fs);
+q = 1;
+
+[hr_original_upsampled, t_upsampled] = resample(HRs, p, q);
+
+hr_original_upsampled = hr_original_upsampled(1:min(length(hr_original_upsampled), length(HRs_gt)));
+HRs_gt = HRs_gt(1:min(length(hr_original_upsampled), length(HRs_gt)));
+
+RMSD = sqrt(sum((hr_original_upsampled - HRs_gt).^2)/length(HRs_gt))
