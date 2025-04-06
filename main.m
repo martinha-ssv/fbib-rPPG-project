@@ -34,6 +34,7 @@ Hs = Buffer(windowSize, 1, true); % Window of unfiltered BPV signal. Length is 3
 filteredHs = zeros(1,1);
 filteredHsDiff = zeros(1,1);
 putativePeaks = []; % DEBUG
+expectedTs = [];
 peaks = [];
 
 
@@ -45,8 +46,10 @@ d = signal.filterObject(fs, [0.8 2.5]); % Butterworth bandpass filter with bandp
 % videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8'); % 4D tensor to store video (not needed, only if we want to save the video)
 figure(1);
 hold on;
+plot(windowSize * [0:5], ones(6), '-o');
 y_data = plot(filteredHs);
-y_data_deriv = plot(filteredHsDiff);
+y_data_peaks = plot(filteredHsDiff, '-o');
+y_data_posspeaks = plot(filteredHsDiff, '-o');
 hold off;
 
 for i=1:N
@@ -81,7 +84,7 @@ for i=1:N
     % Filter signal
     if mod(i, hopSize) == 0
         y = filter(d, Hs.toMatrix(), 2);
-
+        window_timestamps = timestamps(i - windowSize + 1 : i);
         if floor(i / hopSize) == 1 % On first iteration
             filteredHs = y;%(1:2 * hopSize);
             filteredHsDiff = diff(filteredHs);
@@ -89,24 +92,26 @@ for i=1:N
             filteredHs = [filteredHs, y];%(1:end - hopSize)];
             diffY = diff(y);
             filteredHsDiff = [filteredHsDiff, diffY, diffY(end) ];
-            
-            possiblePeaks = postProcessing.getPossiblePeaks(fs, ls, y);
-            putativePeaks = [putativePeaks, possiblePeaks]; % DEBUG
-            
-            if floor(i / hopSize) > 1
-                starti = 1;
-            else
-                starti = postProcessing.getFirstPeakParams()
-            end
-
-            actualPeaks = postProcessing.getActualPeaks(starti, timestamps, possiblePeaks);
-            peaks = [peaks, actualPeaks];
         end
+        possiblePeaks = postProcessing.getPossiblePeaks(fs, ls, y);
+        putativePeaks = [putativePeaks, possiblePeaks]; % DEBUG
+
+        if floor(i / hopSize) > 1
+            starti = 1;
+        else
+            [t_exp, last_t, mu_T, starti] = postProcessing.getFirstPeakParams(possiblePeaks, window_timestamps, 0.75);
+            putatives = [];
+        end
+        
+        [actualPeaks, mu_T, t_exp, last_t, putatives] = postProcessing.getActualPeaks(y, possiblePeaks, window_timestamps, mu_T, t_exp, last_t, starti);
+        expectedTs(1, end + 1) = t_exp; 
+        peaks = [peaks, actualPeaks];
     end
 
     
     set(y_data, 'YData', filteredHs(max(end-3*framesInCycle, 1):end));
-    %set(y_data_deriv, 'YData', filteredHsDiff(max(end-3*framesInCycle, 1):end));
+    set(y_data_peaks, 'YData', peaks(max(end-3*framesInCycle, 1):end));
+    %set(y_data_posspeaks, 'YData', putativePeaks(max(end-3*framesInCycle, 1):end));
 
     drawnow limitrate;
 
@@ -117,13 +122,22 @@ for i=1:N
     %     disp('Frame processing time exceeded sampling period');
     % end
 
-    % Store frame (debugging purposes / if we want to save the video)
+    % Store frame (debugging purpose´s / if we want to save the video)
     % videoFrames(:, :, :, i) = frame;
 
 end
-
+%%
 figure(2);
-subplot(3,1,1);
-plot(Hs.getStorage()); 
-subplot(3,1,2);
-plot(filteredHs);
+hold on;
+timestamps = timestamps(1:length(filteredHs));
+plot(timestamps, filteredHs);
+plot(timestamps, [0, abs(filteredHsDiff)]);
+plot(timestamps, [0 0, diff(filteredHs, 2)]);
+%plot(expectedTs, ones(length(expectedTs)), '-o');
+plot(timestamps, putativePeaks, '-o');
+%plot(timestamps, peaks, '-o');
+yline(0.1);
+legend('1', '2', '3', '4');%, '5', '6', '7');
+% 'Deriv', 'expected Ts','putative peaks',  
+
+hold off;

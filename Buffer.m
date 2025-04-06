@@ -24,7 +24,7 @@ classdef Buffer < Queue
             end
             if storage
                 obj.hasStorage = true
-                obj.storage = {};
+                obj.storage = [];
             end
         end
 
@@ -35,10 +35,10 @@ classdef Buffer < Queue
             if obj.isFull()
                 dequeued = obj.dequeue();
                 if obj.hasStorage
-                    obj.storage{end+1} = dequeued;
+                    obj.storage(end + 1) = dequeued;
                 end
             end
-            obj.elements{end+1} = value;
+            obj.elements(end+1) = value;
         end
 
 

@@ -6,21 +6,22 @@ function [peaks_actual, mu_T, t_exp, last_t, putatives] = getActualPeaks(signalW
     putatives = [];
     for j = starti:length(timestamps)
         if possiblePeaks(j)
-            window_tmin = t_exp + 0.5 * mu_T;
-            window_tmax = t_exp + 1.5 * mu_T;
+            window_tmin = t_exp - 0.1 * mu_T;
+            window_tmax = t_exp + 1.3 * mu_T;
 
-            if (timestamps(j) >= window_tmin) && (timestamps(j) <= window_tmax)
+            if (timestamps(j) >= window_tmin) && (timestamps(j) <= window_tmax) && timestamps(j) > last_t
                 putatives(end + 1) = j;
             end
         elseif timestamps(j) > window_tmax
-            k = postProcessing.bestLikelihood(putatives, signalWindow, timestamps, t_exp);
+            k = postProcessing.bestLikelihood(putatives, signalWindow, timestamps, t_exp)
             peaks_actual(k) = 1;
-            T = timestamps(k) - t_exp;
-            mu_T = signal.temporalMean(T, mu_T, alpha);
+            T = timestamps(k) - last_t
+            mu_T = signal.temporalMean(T, mu_T, alpha)
             t_exp = last_t + mu_T;
             last_t = timestamps(k);
             putatives = [];
         end
     end
 
+    
 end

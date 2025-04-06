@@ -3,8 +3,8 @@ function possiblePeaks = getPossiblePeaks(fs, ls, signalWindow)
     % approx. 1/8 of window - visual data exploration shows approximately 3-4
     % peaks per window
     kernel = ones(1,r)/r;
-    signalDerivative = diff(signalWindow);
+    signalDerivative = diff(signalWindow); signalDerivative(end + 1) = 0;
     secDeriv = diff(signalWindow, 2); 
     secDeriv = filter(kernel, 1, signalDerivative);
-    possiblePeaks = abs(signalDerivative) < 0.1 & secDeriv > 0; possiblePeaks(end + 1) = 0;
+    possiblePeaks = abs(signalDerivative) < 0.1 & secDeriv < 0 & signalWindow > 0; possiblePeaks(end + 1) = 0;
 end

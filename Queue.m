@@ -8,13 +8,13 @@ classdef Queue < handle
     methods
         function obj = Queue()
             %QUEUE Construct an instance of a queue
-            obj.elements = {};
+            obj.elements = [];
         end
 
 
         function enqueue(obj, value)
             %ENQUEUE Adds an element to the end of the queue
-            obj.elements{end+1} = value;
+            obj.elements(end+1) = value;
         end
 
 
@@ -23,7 +23,7 @@ classdef Queue < handle
             if obj.isEmpty()
             error('Queue:EmptyQueue', 'Cannot dequeue from an empty queue');
             end
-            value = obj.elements{1};
+            value = obj.elements(1);
             obj.elements(1) = []; % Correctly remove the first element
         end
 
@@ -59,30 +59,28 @@ classdef Queue < handle
             %TOMATRIX Converts the queue to a matrix. Default is time 0 on index 1 (reversed from order of Queue elements)
             
             if nargin < 2
-                timeAxis = true;
+                timeAxis = false;
             end
 
             if isempty(obj.elements)
                 toMat = [];
-            elseif length(obj.elements) == 1
-                toMat = obj.elements{1}(:); % Ensure column format for a single element
-            else
-                toMat = vertcat(obj.elements{:})';
             end
 
             if timeAxis
                 toMat = toMat(:, end:-1:1);
             end
+
+            toMat = obj.elements;
         end
 
         function queueFromMtrx(obj, mtrx)
             %QUEUEFROMMTRX Converts a matrix to a queue
             if isempty(mtrx)
-                obj.elements = {};
+                obj.elements = [];
             elseif size(mtrx, 1) == 1
-                obj.elements = cell2mat(mtrx);
+                obj.elements = mtrx;
             else
-                obj.elements = cell2mat(mtrx', 1);
+                obj.elements = mtrx;
             end
         end
 
