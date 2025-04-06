@@ -80,8 +80,8 @@ for i=1:N
 
     % Filter signal
     if mod(i, hopSize) == 0
-        y = filter(d, Hs.toMatrix(), 2)
-        disp('currently at'); disp(i); disp('appending'); disp(length(y));
+        y = filter(d, Hs.toMatrix(), 2);
+
         if floor(i / hopSize) == 1 % On first iteration
             filteredHs = y;%(1:2 * hopSize);
             filteredHsDiff = diff(filteredHs);
