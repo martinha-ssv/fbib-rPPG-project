@@ -26,13 +26,15 @@ sigma_s_n_1 = 0;
 
 % Initialize signal buffers
 framesInCycle = ceil(fs * ls);
-windowSize = framesInCycle; % Window size is 3 cardiac cycles
-hopSize = framesInCycle; % Hop size is 1 cardiac cycle
+windowSize = ceil(fs); % Window size is enough to get 1 HR value/s
+hopSize = ceil(fs); % Hop size is 1 window size
 
 hs = Buffer(framesInCycle,1); % Window size is 1 cardiac cycle
 Hs = Buffer(windowSize, 1, true); % Window of unfiltered BPV signal. Length is 3 times the length of a cardiac cycle, to avoid distortion.
 filteredHs = zeros(1,1);
 filteredHsDiff = zeros(1,1);
+putativePeaks = []; % DEBUG
+peaks = [];
 
 
 % Initialize filter object
@@ -67,30 +69,48 @@ for i=1:N
 
     % Calculate bpv signal from raw signal
     [H_n, mu_n_1, mu_s_n_1, sigma_s_n_1, h_n] = signal.processWindow(fs, ls, c, mu_n_1, mu_s_n_1, sigma_s_n_1, hs);
+
+    if i==1
+        H_n = 0;
+        h_n = 0;
+    end
+
     Hs.enqueue(H_n);
     hs.enqueue(h_n);
 
     % Filter signal
-    if mod(i, hopSize) == 0 && i > Hs.getCapacity()
-        y = filter(d, Hs.toMatrix(), 2);
+    if mod(i, hopSize) == 0
+        y = filter(d, Hs.toMatrix(), 2)
+        disp('currently at'); disp(i); disp('appending'); disp(length(y));
         if floor(i / hopSize) == 1 % On first iteration
             filteredHs = y;%(1:2 * hopSize);
             filteredHsDiff = diff(filteredHs);
         else
             filteredHs = [filteredHs, y];%(1:end - hopSize)];
-            diffY = diff(y)
+            diffY = diff(y);
             filteredHsDiff = [filteredHsDiff, diffY, diffY(end) ];
-            % cross fade?
+            
+            possiblePeaks = postProcessing.getPossiblePeaks(fs, ls, y);
+            putativePeaks = [putativePeaks, possiblePeaks]; % DEBUG
+            
+            if floor(i / hopSize) > 1
+                starti = 1;
+            else
+                starti = postProcessing.getFirstPeakParams()
+            end
+
+            actualPeaks = postProcessing.getActualPeaks(starti, timestamps, possiblePeaks);
+            peaks = [peaks, actualPeaks];
         end
     end
 
     
     set(y_data, 'YData', filteredHs(max(end-3*framesInCycle, 1):end));
-    set(y_data_deriv, 'YData', filteredHsDiff(max(end-3*framesInCycle, 1):end));
+    %set(y_data_deriv, 'YData', filteredHsDiff(max(end-3*framesInCycle, 1):end));
 
     drawnow limitrate;
 
-    elapsed = toc(tStart);
+    %elapsed = toc(tStart);
     % if elapsed < ts
     %     pause(ts - elapsed);
     % else 
