@@ -1,4 +1,5 @@
-function getFrameFromCamera(D, fs, cam)
+function getFrameFromCamera(D,freq)
+    cam = webcam;
     while true
         img = snapshot(cam);
        
@@ -6,4 +7,3 @@ function getFrameFromCamera(D, fs, cam)
         pause(1/freq);
     end
 end
-

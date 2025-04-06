@@ -1,5 +1,5 @@
 % Display only the ROI from video
-video = VideoReader('subject_1.avi');
+video = VideoReader('media/subject_1.avi');
 numFrames = floor(video.Duration * video.FrameRate);
 videoFrames = zeros(video.Height, video.Width, 3, numFrames, 'uint8');
 

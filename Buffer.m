@@ -1,5 +1,5 @@
 classdef Buffer < Queue
-    properties (Access = protected)
+    properties (Access = public)
         capacity
         el_dim % Dimension of the elements in the buffer
         storage
@@ -60,6 +60,8 @@ classdef Buffer < Queue
                 q = obj; % returns 
                 return;
             else
+                % disp(obj.el_dim)
+                % disp(obj.capacity - obj.length())
                 padding = value * ones(obj.el_dim, obj.capacity - obj.length());
                 
                 if obj.isEmpty()

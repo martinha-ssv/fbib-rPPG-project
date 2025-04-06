@@ -1,4 +1,4 @@
-function [H_n, mu_n, mu_s_n, sigma_s_n, h_n] = recursiveWindow2(fs, ls, c, mu_n_1, mu_s_n_1, sigma_s_n_1, hs)
+function [H_n, mu_n, mu_s_n, sigma_s_n, h_n] = recursiveWindow(fs, ls, c, mu_n_1, mu_s_n_1, sigma_s_n_1, hs)
     %PROCESSFRAME Inputs the mean color vector of a frame and the temporal mean
     %of the rest of the window, as well as extra parameters, and outputs the
     %window's heart signal.
@@ -37,11 +37,9 @@ function [H_n, mu_n, mu_s_n, sigma_s_n, h_n] = recursiveWindow2(fs, ls, c, mu_n_
     else
         alpha = sigma_s_n(1)/sigma_s_n(2);
     end
-
     h_n = S(1) + alpha * S(2);
 
     
-
     % Normalisation
     hs = hs.toMatrix();
 
@@ -51,5 +49,4 @@ function [H_n, mu_n, mu_s_n, sigma_s_n, h_n] = recursiveWindow2(fs, ls, c, mu_n_
     end
 
     H_n = (h_n - mean(hs)) / sigma_h;
-
 end

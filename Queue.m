@@ -1,5 +1,5 @@
 classdef Queue < handle
-    properties (Access = protected)
+    properties (Access = public)
         elements
     end
 
