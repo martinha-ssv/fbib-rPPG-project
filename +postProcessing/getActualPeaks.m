@@ -1,27 +1,58 @@
 function [peaks_actual, mu_T, t_exp, last_t, putatives] = getActualPeaks(signalWindow, possiblePeaks, timestamps, mu_T, t_exp, last_t, starti)
     alpha = 0.7;
     peaks_actual = zeros(size(timestamps));
-    window_tmin = t_exp - 0.5 * mu_T;
-    window_tmax = t_exp + 0.5 * mu_T;
+    window_tmin = t_exp;
+    window_tmax = t_exp + mu_T;
     putatives = [];
-    for j = starti:length(timestamps)
-        if possiblePeaks(j)
-            window_tmin = t_exp - 0.1 * mu_T;
-            window_tmax = t_exp + 1.3 * mu_T;
 
+    figure(3) % DEBUG
+    clf;
+    hold on;
+    tss = plot(timestamps, ones(length(timestamps)), 'ro');
+    yline(0);yline(3);
+
+    putplot = plot(timestamps(putatives), zeros(length(putatives)), 'go');
+
+    possPeaks = plot(timestamps(logical(possiblePeaks)), ones(sum(possiblePeaks)), 'c+');
+    t_expplot = plot([t_exp], [2], 'b*');
+    boundsplot = plot([window_tmin window_tmax], [2 2], 'm*');
+    hold off;
+
+    for j = 1:length(timestamps)
+        if possiblePeaks(j)
             if (timestamps(j) >= window_tmin) && (timestamps(j) <= window_tmax) && timestamps(j) > last_t
                 putatives(end + 1) = j;
+                set(putplot, 'XData', timestamps(putatives));
+                set(putplot, 'YData', ones(length(putatives)));
             end
-        elseif timestamps(j) > window_tmax
-            k = postProcessing.bestLikelihood(putatives, signalWindow, timestamps, t_exp)
-            peaks_actual(k) = 1;
+        end
+        if timestamps(j) > window_tmax && ~isempty(putatives)
+            [k, lik] = postProcessing.bestLikelihood(putatives, signalWindow, timestamps, t_exp)
             T = timestamps(k) - last_t
             mu_T = signal.temporalMean(T, mu_T, alpha)
             t_exp = last_t + mu_T;
+            window_tmin = t_exp - 0.5 * mu_T;
+            window_tmax = t_exp + 0.5 * mu_T;
+            set(t_expplot, 'XData', [t_exp]);
+            set(boundsplot, 'XData', [window_tmin window_tmax]);
             last_t = timestamps(k);
             putatives = [];
+            peaks_actual(k) = 1;
         end
     end
 
+    [k, lik] = postProcessing.bestLikelihood(putatives, signalWindow, timestamps, t_exp)
+    if lik > 0.4
+        T = max(timestamps(k) - last_t, 0.3);
+        mu_T = signal.temporalMean(T, mu_T, alpha)
+        t_exp = last_t + mu_T;
+        window_tmin = t_exp - 0.5 * mu_T;
+        window_tmax = t_exp + 0.5 * mu_T;
+        set(t_expplot, 'XData', [t_exp]);
+        set(boundsplot, 'XData', [window_tmin window_tmax]);
+        last_t = timestamps(k);
+        putatives = [];
+        peaks_actual(k) = 1;
+    end
     
 end

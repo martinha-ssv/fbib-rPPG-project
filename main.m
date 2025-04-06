@@ -1,5 +1,5 @@
 % Read video
-video = VideoReader('media/subject_1.avi'); % Use video file
+video = VideoReader('media/sub2.avi'); % Use video file
 fs = video.FrameRate; % Sampling frequency
 N = floor(video.Duration * video.FrameRate); % Number of frames in video
 
@@ -8,7 +8,7 @@ N = floor(video.Duration * video.FrameRate); % Number of frames in video
 % cam.Resolution = '640x480';
 % fs = 20; % Sampling frequency (30 fps)
 
-N = 1000; % Number of frames to process
+N = video.NumFrames; % Number of frames to process
 ts = 1/fs; % Sampling period
 ls = 1.6; % Interval containing 1 cardiac cycle
 
@@ -29,6 +29,9 @@ framesInCycle = ceil(fs * ls);
 windowSize = ceil(fs); % Window size is enough to get 1 HR value/s
 hopSize = ceil(fs); % Hop size is 1 window size
 
+HRwindowSize = 3 * framesInCycle;
+HRhopSize = hopSize;
+
 hs = Buffer(framesInCycle,1); % Window size is 1 cardiac cycle
 Hs = Buffer(windowSize, 1, true); % Window of unfiltered BPV signal. Length is 3 times the length of a cardiac cycle, to avoid distortion.
 filteredHs = zeros(1,1);
@@ -36,7 +39,10 @@ filteredHsDiff = zeros(1,1);
 putativePeaks = []; % DEBUG
 expectedTs = [];
 peaks = [];
+HRs = [80 80];
 
+
+last_t = 0; mu_T = 0.75;
 
 % Initialize filter object
 d = signal.filterObject(fs, [0.8 2.5]); % Butterworth bandpass filter with bandpass [0.8; 2.5]Hz (equivalent to human heart rate range of 48 to 150 bpm)
@@ -89,23 +95,16 @@ for i=1:N
             filteredHs = y;%(1:2 * hopSize);
             filteredHsDiff = diff(filteredHs);
         else
-            filteredHs = [filteredHs, y];%(1:end - hopSize)];
+            filteredHs = [filteredHs, y];
             diffY = diff(y);
             filteredHsDiff = [filteredHsDiff, diffY, diffY(end) ];
         end
-        possiblePeaks = postProcessing.getPossiblePeaks(fs, ls, y);
-        putativePeaks = [putativePeaks, possiblePeaks]; % DEBUG
-
-        if floor(i / hopSize) > 1
-            starti = 1;
-        else
-            [t_exp, last_t, mu_T, starti] = postProcessing.getFirstPeakParams(possiblePeaks, window_timestamps, 0.75);
-            putatives = [];
-        end
-        
-        [actualPeaks, mu_T, t_exp, last_t, putatives] = postProcessing.getActualPeaks(y, possiblePeaks, window_timestamps, mu_T, t_exp, last_t, starti);
-        expectedTs(1, end + 1) = t_exp; 
+        actualPeaks = postProcessing.getPeaks(y, window_timestamps, last_t, mu_T)
         peaks = [peaks, actualPeaks];
+        if i > HRwindowSize
+            HR = 60 * sum(peaks(i - HRwindowSize + 1 : min(i, length(peaks)))) / (HRwindowSize / fs);
+            HRs(end + 1) = HR;
+        end
     end
 
     
@@ -115,29 +114,33 @@ for i=1:N
 
     drawnow limitrate;
 
-    %elapsed = toc(tStart);
-    % if elapsed < ts
-    %     pause(ts - elapsed);
-    % else 
-    %     disp('Frame processing time exceeded sampling period');
-    % end
-
     % Store frame (debugging purpose´s / if we want to save the video)
     % videoFrames(:, :, :, i) = frame;
 
 end
 %%
+gt_file = "data/ground_truth2.txt";
+gt = readmatrix(gt_file);
+filteredHs_gt = gt(1, :);
+HRs_gt = gt(2, :);
+t_gt = gt(3,:);
+
 figure(2);
+subplot(2, 1, 1);
 hold on;
 timestamps = timestamps(1:length(filteredHs));
 plot(timestamps, filteredHs);
-plot(timestamps, [0, abs(filteredHsDiff)]);
-plot(timestamps, [0 0, diff(filteredHs, 2)]);
-%plot(expectedTs, ones(length(expectedTs)), '-o');
-plot(timestamps, putativePeaks, '-o');
-%plot(timestamps, peaks, '-o');
-yline(0.1);
-legend('1', '2', '3', '4');%, '5', '6', '7');
-% 'Deriv', 'expected Ts','putative peaks',  
+plot(t_gt, filteredHs_gt);
+legend('PPG Signal', 'GT PPG Signal');
+hold off;
+
+subplot(2, 1, 2);
+hold on;
+hr_ts = 1:length(HRs); hr_ts = hr_ts / (windowSize / fs);
+plot(hr_ts, filter(ones(1,5)/5, 1, HRs, ones(1, 4)), 'mo');
+plot(t_gt, HRs_gt);
+legend('HR Signal', 'GT HR Signal');
+
+%legend('PPG Signal', 'GT PPG Signal', 'HR Signal', 'GT HR Signal');
 
 hold off;
